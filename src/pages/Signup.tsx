@@ -1,13 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { AuthShell } from '../components/AuthShell'
+import { authErrorMessage } from '../lib/errors'
+import { supabase } from '../lib/supabase'
 
 export function Signup() {
   const navigate = useNavigate()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     const name = String(data.get('name') ?? '').trim()
@@ -16,7 +19,7 @@ export function Signup() {
     const business = String(data.get('business') ?? '').trim()
 
     if (!name || !email || !password || !business) {
-      setError('All fields are required to set up the demo workspace.')
+      setError('All fields are required.')
       return
     }
     if (password.length < 8) {
@@ -26,8 +29,50 @@ export function Signup() {
 
     setError(null)
     setSubmitting(true)
-    // Prototype only: no real account is created.
-    window.setTimeout(() => navigate('/app', { replace: true }), 600)
+    // The on_auth_user_created trigger in the database uses this metadata to
+    // provision the user's profile and business workspace.
+    const { data: result, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name, business_name: business },
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
+    })
+    if (signUpError) {
+      setError(authErrorMessage(signUpError))
+      setSubmitting(false)
+      return
+    }
+    if (result.session) {
+      navigate('/app', { replace: true })
+      return
+    }
+    // Email confirmation is enabled: the user must verify before logging in.
+    setAwaitingConfirmation(true)
+    setSubmitting(false)
+  }
+
+  if (awaitingConfirmation) {
+    return (
+      <AuthShell
+        title="Check your inbox"
+        subtitle="We sent you a confirmation link to finish creating your workspace."
+        footer={
+          <>
+            Already confirmed?{' '}
+            <Link to="/login" className="font-semibold text-indigo-600 hover:text-indigo-500">
+              Log in
+            </Link>
+          </>
+        }
+      >
+        <p className="mt-6 rounded-lg bg-indigo-50 px-4 py-3 text-sm leading-relaxed text-indigo-800 ring-1 ring-inset ring-indigo-600/20">
+          Click the link in the email we just sent you. Once confirmed, you can sign in and your
+          business workspace will be ready.
+        </p>
+      </AuthShell>
+    )
   }
 
   return (

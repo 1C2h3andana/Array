@@ -6,10 +6,11 @@ export function formatCurrency(amount: number): string {
   }).format(amount)
 }
 
-export function formatDate(isoDate: string): string {
+export function formatDate(value: string): string {
+  const date = value.length === 10 ? new Date(`${value}T00:00:00`) : new Date(value)
   return new Intl.DateTimeFormat('en-US', {
     dateStyle: 'medium',
-  }).format(new Date(`${isoDate}T00:00:00`))
+  }).format(date)
 }
 
 export function formatQuotationTotal(

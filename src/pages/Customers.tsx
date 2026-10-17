@@ -1,13 +1,13 @@
 import { Search, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusBadge } from '../components/StatusBadge'
-import { EmptyState, PageHeader, TableSkeleton } from '../components/ui'
-import { customers } from '../data/sampleData'
+import { EmptyState, LoadError, PageHeader, TableSkeleton } from '../components/ui'
+import { fetchCustomers } from '../lib/data'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { formatCurrency, formatDate } from '../utils/format'
 
 export function Customers() {
-  const { data, loading } = useAsyncData(() => customers)
+  const { data, loading, error, reload } = useAsyncData(fetchCustomers)
   const [query, setQuery] = useState('')
 
   const filtered = useMemo(() => {
@@ -17,8 +17,8 @@ export function Customers() {
     return data.filter(
       (c) =>
         c.name.toLowerCase().includes(q) ||
-        c.company.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q),
+        (c.company?.toLowerCase().includes(q) ?? false) ||
+        (c.email?.toLowerCase().includes(q) ?? false),
     )
   }, [data, query])
 
@@ -29,7 +29,9 @@ export function Customers() {
         description="Everyone you do business with, in one directory."
       />
 
-      {loading || !data ? (
+      {error ? (
+        <LoadError message={error} onRetry={reload} />
+      ) : loading || !data ? (
         <div className="rounded-xl border border-slate-200 bg-white">
           <TableSkeleton rows={6} columns={5} />
         </div>
@@ -92,11 +94,11 @@ export function Customers() {
                       <tr key={customer.id} className="hover:bg-slate-50/60">
                         <td className="px-4 py-3.5">
                           <p className="font-medium text-slate-900">{customer.name}</p>
-                          <p className="text-xs text-slate-500">{customer.company}</p>
+                          <p className="text-xs text-slate-500">{customer.company ?? '—'}</p>
                         </td>
                         <td className="px-4 py-3.5">
-                          <p className="text-slate-700">{customer.email}</p>
-                          <p className="text-xs text-slate-500">{customer.phone}</p>
+                          <p className="text-slate-700">{customer.email ?? '—'}</p>
+                          <p className="text-xs text-slate-500">{customer.phone ?? '—'}</p>
                         </td>
                         <td className="px-4 py-3.5">
                           <StatusBadge status={customer.status} />

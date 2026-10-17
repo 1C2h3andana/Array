@@ -1,8 +1,8 @@
 import { Receipt, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusBadge } from '../components/StatusBadge'
-import { EmptyState, PageHeader, TableSkeleton } from '../components/ui'
-import { customers, invoices } from '../data/sampleData'
+import { EmptyState, LoadError, PageHeader, TableSkeleton } from '../components/ui'
+import { fetchInvoices } from '../lib/data'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { INVOICE_STATUS_LABELS, type InvoiceStatus } from '../types'
 import { formatCurrency, formatDate } from '../utils/format'
@@ -16,7 +16,7 @@ const statusFilters: Array<{ value: InvoiceStatus | 'all'; label: string }> = [
 ]
 
 export function Invoices() {
-  const { data, loading } = useAsyncData(() => invoices)
+  const { data, loading, error, reload } = useAsyncData(fetchInvoices)
   const [status, setStatus] = useState<InvoiceStatus | 'all'>('all')
   const [query, setQuery] = useState('')
 
@@ -28,11 +28,7 @@ export function Invoices() {
         (status === 'all' || inv.status === status) &&
         (!q ||
           inv.number.toLowerCase().includes(q) ||
-          (customers
-            .find((c) => c.id === inv.customerId)
-            ?.company.toLowerCase()
-            .includes(q) ??
-            false)),
+          (inv.customerCompany?.toLowerCase().includes(q) ?? false)),
     )
   }, [data, status, query])
 
@@ -58,7 +54,9 @@ export function Invoices() {
         }
       />
 
-      {loading || !data ? (
+      {error ? (
+        <LoadError message={error} onRetry={reload} />
+      ) : loading || !data ? (
         <div className="rounded-xl border border-slate-200 bg-white">
           <TableSkeleton rows={6} columns={5} />
         </div>
@@ -136,7 +134,7 @@ export function Invoices() {
                       <tr key={inv.id} className="hover:bg-slate-50/60">
                         <td className="px-4 py-3.5 font-medium text-slate-900">{inv.number}</td>
                         <td className="px-4 py-3.5 text-slate-700">
-                          {customers.find((c) => c.id === inv.customerId)?.company ?? 'Unknown customer'}
+                          {inv.customerCompany ?? 'Unknown customer'}
                         </td>
                         <td className="px-4 py-3.5">
                           <StatusBadge status={inv.status} label={INVOICE_STATUS_LABELS[inv.status]} />
@@ -145,7 +143,7 @@ export function Invoices() {
                           {formatCurrency(inv.amount)}
                         </td>
                         <td className="hidden px-4 py-3.5 text-slate-600 md:table-cell">
-                          {formatDate(inv.dueAt)}
+                          {inv.dueAt ? formatDate(inv.dueAt) : '—'}
                         </td>
                       </tr>
                     ))}

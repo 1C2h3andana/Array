@@ -1,8 +1,8 @@
 import { FileText, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { StatusBadge } from '../components/StatusBadge'
-import { EmptyState, PageHeader, TableSkeleton } from '../components/ui'
-import { customers, quotations } from '../data/sampleData'
+import { EmptyState, LoadError, PageHeader, TableSkeleton } from '../components/ui'
+import { fetchQuotations } from '../lib/data'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { QUOTATION_STATUS_LABELS, type Quotation, type QuotationStatus } from '../types'
 import { formatCurrency, formatDate, formatQuotationTotal } from '../utils/format'
@@ -16,12 +16,11 @@ const statusFilters: Array<{ value: QuotationStatus | 'all'; label: string }> = 
 ]
 
 function QuotationRow({ quotation }: { quotation: Quotation }) {
-  const customer = customers.find((c) => c.id === quotation.customerId)
   return (
     <tr className="hover:bg-slate-50/60">
       <td className="px-4 py-3.5">
         <p className="font-medium text-slate-900">{quotation.number}</p>
-        <p className="text-xs text-slate-500">{customer?.company ?? 'Unknown customer'}</p>
+        <p className="text-xs text-slate-500">{quotation.customerCompany ?? 'Unknown customer'}</p>
       </td>
       <td className="px-4 py-3.5">
         <StatusBadge status={quotation.status} label={QUOTATION_STATUS_LABELS[quotation.status]} />
@@ -33,14 +32,14 @@ function QuotationRow({ quotation }: { quotation: Quotation }) {
         {formatCurrency(formatQuotationTotal(quotation.items))}
       </td>
       <td className="hidden px-4 py-3.5 text-slate-600 md:table-cell">
-        {formatDate(quotation.validUntil)}
+        {quotation.validUntil ? formatDate(quotation.validUntil) : '—'}
       </td>
     </tr>
   )
 }
 
 export function Quotations() {
-  const { data, loading } = useAsyncData(() => quotations)
+  const { data, loading, error, reload } = useAsyncData(fetchQuotations)
   const [status, setStatus] = useState<QuotationStatus | 'all'>('all')
   const [query, setQuery] = useState('')
 
@@ -52,11 +51,7 @@ export function Quotations() {
         (status === 'all' || qtn.status === status) &&
         (!q ||
           qtn.number.toLowerCase().includes(q) ||
-          (customers
-            .find((c) => c.id === qtn.customerId)
-            ?.company.toLowerCase()
-            .includes(q) ??
-            false)),
+          (qtn.customerCompany?.toLowerCase().includes(q) ?? false)),
     )
   }, [data, status, query])
 
@@ -67,7 +62,9 @@ export function Quotations() {
         description="Track every quote from draft to decision."
       />
 
-      {loading || !data ? (
+      {error ? (
+        <LoadError message={error} onRetry={reload} />
+      ) : loading || !data ? (
         <div className="rounded-xl border border-slate-200 bg-white">
           <TableSkeleton rows={4} columns={5} />
         </div>

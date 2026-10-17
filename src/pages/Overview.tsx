@@ -1,41 +1,10 @@
 import { AlertTriangle, ArrowRight, CircleDollarSign, FileText, Receipt, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '../components/StatusBadge'
-import { CardsSkeleton, TableSkeleton } from '../components/ui'
-import { customers, followUps, invoices, quotations } from '../data/sampleData'
+import { CardsSkeleton, LoadError, TableSkeleton } from '../components/ui'
+import { fetchOverview } from '../lib/data'
 import { useAsyncData } from '../hooks/useAsyncData'
 import { formatCurrency, formatDate } from '../utils/format'
-
-interface OverviewData {
-  revenueCollected: number
-  outstanding: number
-  activeCustomers: number
-  openQuotations: number
-  recentInvoices: typeof invoices
-  dueFollowUps: typeof followUps
-}
-
-function loadOverview(): OverviewData {
-  const revenueCollected = invoices
-    .filter((inv) => inv.status === 'paid')
-    .reduce((sum, inv) => sum + inv.amount, 0)
-  const outstanding = invoices
-    .filter((inv) => inv.status === 'pending' || inv.status === 'overdue')
-    .reduce((sum, inv) => sum + inv.amount, 0)
-  const activeCustomers = customers.filter((c) => c.status === 'active').length
-  const openQuotations = quotations.filter(
-    (q) => q.status === 'sent' || q.status === 'accepted',
-  ).length
-
-  return {
-    revenueCollected,
-    outstanding,
-    activeCustomers,
-    openQuotations,
-    recentInvoices: invoices.slice(0, 4),
-    dueFollowUps: followUps.filter((f) => f.status === 'open'),
-  }
-}
 
 const statsConfig = [
   { key: 'revenueCollected', label: 'Revenue collected', icon: CircleDollarSign, href: '/app/invoices' },
@@ -45,7 +14,16 @@ const statsConfig = [
 ] as const
 
 export function Overview() {
-  const { data, loading } = useAsyncData(loadOverview)
+  const { data, loading, error, reload } = useAsyncData(fetchOverview)
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <PageHeading />
+        <LoadError message={error} onRetry={reload} />
+      </div>
+    )
+  }
 
   if (loading || !data) {
     return (
@@ -66,16 +44,12 @@ export function Overview() {
     )
   }
 
-  const customerName = (id: string) => customers.find((c) => c.id === id)?.company ?? 'Unknown'
+  const customerName = (invoice: { customerCompany: string | null }) =>
+    invoice.customerCompany ?? 'Unknown'
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Overview</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          A snapshot of how your business is doing this month.
-        </p>
-      </div>
+      <PageHeading />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statsConfig.map(({ key, label, icon: Icon, href }) => (
@@ -113,9 +87,9 @@ export function Overview() {
               <li key={inv.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-900">
-                    {inv.number} · {customerName(inv.customerId)}
+                    {inv.number} · {customerName(inv)}
                   </p>
-                  <p className="text-xs text-slate-500">Due {formatDate(inv.dueAt)}</p>
+                  <p className="text-xs text-slate-500">Due {inv.dueAt ? formatDate(inv.dueAt) : 'no due date'}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
                   <span className="text-sm font-semibold text-slate-900">{formatCurrency(inv.amount)}</span>
@@ -150,7 +124,7 @@ export function Overview() {
                     <StatusBadge status={fu.status} />
                   </div>
                   <p className="mt-0.5 text-xs text-slate-500">
-                    {customerName(fu.customerId)} · due {formatDate(fu.dueAt)}
+                    {customerName(fu)} · due {fu.dueAt ? formatDate(fu.dueAt) : 'no due date'}
                   </p>
                 </li>
               ))}
@@ -158,9 +132,16 @@ export function Overview() {
           )}
         </section>
       </div>
+    </div>
+  )
+}
 
-      <p className="text-xs text-slate-400">
-        Prototype notice: all figures above come from sample data and are not connected to a live backend.
+function PageHeading() {
+  return (
+    <div>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Overview</h1>
+      <p className="mt-1 text-sm text-slate-600">
+        A snapshot of how your business is doing this month.
       </p>
     </div>
   )

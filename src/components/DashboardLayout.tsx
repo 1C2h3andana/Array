@@ -2,6 +2,7 @@ import {
   Bot,
   FileText,
   LayoutDashboard,
+  LogOut,
   Menu,
   Receipt,
   Settings as SettingsIcon,
@@ -10,7 +11,9 @@ import {
   X,
 } from 'lucide-react'
 import { useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/auth-context'
+import { toErrorMessage } from '../lib/errors'
 
 const navItems = [
   { to: '/app', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -21,6 +24,44 @@ const navItems = [
   { to: '/app/assistant', label: 'AI Assistant', icon: Bot },
   { to: '/app/settings', label: 'Settings', icon: SettingsIcon },
 ]
+
+function AccountBox({ onNavigate }: { onNavigate?: () => void }) {
+  const { session, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [signingOut, setSigningOut] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSignOut() {
+    setError(null)
+    setSigningOut(true)
+    try {
+      await signOut()
+      onNavigate?.()
+      navigate('/login', { replace: true })
+    } catch (err) {
+      setError(toErrorMessage(err))
+      setSigningOut(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg bg-slate-800/60 p-3">
+      <p className="truncate text-xs font-medium text-slate-300" title={session?.user?.email ?? ''}>
+        {session?.user?.email ?? 'Signed in'}
+      </p>
+      {error ? <p className="mt-1 text-xs text-rose-400">{error}</p> : null}
+      <button
+        type="button"
+        onClick={handleSignOut}
+        disabled={signingOut}
+        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+        {signingOut ? 'Signing out…' : 'Sign out'}
+      </button>
+    </div>
+  )
+}
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
@@ -54,12 +95,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           </NavLink>
         ))}
       </div>
-      <div className="rounded-lg bg-slate-800/60 p-3">
-        <p className="text-xs font-medium text-slate-300">Prototype</p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-400">
-          This demo uses sample data only. No live AI or payments are connected.
-        </p>
-      </div>
+      <AccountBox onNavigate={onNavigate} />
     </nav>
   )
 }
@@ -67,6 +103,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 export function DashboardLayout() {
   // The drawer closes via each NavLink's onNavigate handler.
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const { error: authError } = useAuth()
 
   return (
     <div className="flex min-h-screen">
@@ -117,6 +154,11 @@ export function DashboardLayout() {
         </header>
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+          {authError ? (
+            <p role="alert" className="mb-6 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 ring-1 ring-inset ring-rose-600/20">
+              {authError}
+            </p>
+          ) : null}
           <Outlet />
         </main>
       </div>

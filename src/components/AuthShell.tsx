@@ -11,7 +11,7 @@ export function AuthShell({
   title: string
   subtitle: string
   children: ReactNode
-  footer: ReactNode
+  footer?: ReactNode
 }) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-50 px-4 py-12">
@@ -25,11 +25,13 @@ export function AuthShell({
         <h1 className="text-xl font-bold text-slate-900">{title}</h1>
         <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
         {children}
-        <div className="mt-6 border-t border-slate-200 pt-4 text-center text-sm">{footer}</div>
+        {footer ? (
+          <div className="mt-6 border-t border-slate-200 pt-4 text-center text-sm">{footer}</div>
+        ) : null}
       </div>
       <p className="mt-6 max-w-md text-center text-xs leading-relaxed text-slate-400">
-        Visual prototype — authentication is simulated and sample data is used throughout.
-        No real accounts are created.
+        Your account and workspace are protected by Supabase authentication. Business data is
+        private to your workspace.
       </p>
     </div>
   )

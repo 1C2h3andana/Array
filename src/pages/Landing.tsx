@@ -42,13 +42,14 @@ const features = [
   {
     icon: Bot,
     title: 'AI assistant',
-    description: 'Ask about your numbers and get quick summaries (in-app demo).',
+    description:
+      'Ask about your numbers and get quick summaries, computed in-app from your data.',
   },
 ]
 
 const dashboardHighlights = [
   'Sidebar navigation built for daily use',
-  'Realistic sample data, clearly labeled as a prototype',
+  'Your own secure workspace — data is never shared between businesses',
   'Loading and empty states throughout',
   'Works on phones, tablets and desktops',
 ]
@@ -212,12 +213,12 @@ export function Landing() {
         <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
           <div className="rounded-2xl bg-indigo-600 px-6 py-12 text-center sm:px-12">
             <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Try the interactive prototype
+              Get your own workspace
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-indigo-100">
-              Explore the full dashboard with realistic sample data. This prototype is
-              for preview purposes only — it does not process payments or connect to
-              a live backend.
+              Create an account and the dashboard is yours — every workspace is
+              isolated with row-level security. BizPilot does not process payments,
+              and the assistant is an in-app calculator, not a live AI service.
             </p>
             <Link
               to="/signup"
@@ -231,9 +232,9 @@ export function Landing() {
 
       <footer className="border-t border-slate-200 py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6">
-          <p className="text-sm text-slate-500">© 2026 BizPilot AI · Visual prototype</p>
+          <p className="text-sm text-slate-500">© 2026 BizPilot AI</p>
           <p className="text-xs text-slate-400">
-            Sample data only. No payment processing or live AI is connected.
+            No payment processing. The assistant computes answers in-app, not via a live AI service.
           </p>
         </div>
       </footer>

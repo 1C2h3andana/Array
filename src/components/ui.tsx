@@ -1,3 +1,4 @@
+import { AlertTriangle, RotateCcw } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 
@@ -53,6 +54,29 @@ export function CardsSkeleton({ count = 3 }: { count?: number }) {
           <Skeleton className="mt-4 h-3 w-24" />
         </div>
       ))}
+    </div>
+  )
+}
+
+export function LoadError({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div
+      role="alert"
+      className="flex flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/60 px-6 py-12 text-center"
+    >
+      <AlertTriangle className="h-8 w-8 text-rose-500" aria-hidden="true" />
+      <h3 className="mt-3 text-base font-semibold text-rose-900">Could not load your data</h3>
+      <p className="mt-1 max-w-sm text-sm text-rose-700">{message}</p>
+      {onRetry ? (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700"
+        >
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
+          Try again
+        </button>
+      ) : null}
     </div>
   )
 }
